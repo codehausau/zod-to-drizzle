@@ -4,7 +4,7 @@ Create Drizzle ORM tables from Zod schemas with support for multiple SQL dialect
 
 ## Installation
 
-````bash
+```bash
 npm
 npm install zod-to-drizzle
 pnpm
