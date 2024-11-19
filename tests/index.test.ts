@@ -22,10 +22,11 @@ describe("createTableFromZod", () => {
 		}) as SQLiteTable;
 
 		// Check table name
-		expect(table[Symbol.for("drizzle:Name")]).toBe("users");
+		const tableName = (table as any)[Symbol.for("drizzle:Name")];
+		expect(tableName).toBe("users");
 
 		// Check columns existence and types
-		const columns = table[Symbol.for("drizzle:Columns")];
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
 
 		// Primary Key
 		expect(columns.id.name).toBe("id");
@@ -83,7 +84,7 @@ describe("createTableFromZod", () => {
 			primaryKey: "id",
 		}) as SQLiteTable;
 
-		const columns = table[Symbol.for("drizzle:Columns")];
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
 		expect(columns.required.notNull).toBe(true);
 		expect(columns.optional.notNull).toBe(false);
 	});

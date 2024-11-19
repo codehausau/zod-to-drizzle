@@ -15,7 +15,7 @@ export type ColumnWithMeta = Column & { meta?: JsonField };
 
 export type SupportedDialects = "sqlite" | "postgres" | "mysql";
 
-export interface TableOptions<T> {
+export interface TableOptions<T extends z.ZodTypeAny> {
 	primaryKey?: keyof z.infer<T>;
 	dialect?: SupportedDialects;
 }
