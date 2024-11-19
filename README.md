@@ -5,13 +5,16 @@ Create Drizzle ORM tables from Zod schemas with support for multiple SQL dialect
 ## Installation
 
 ```bash
-npm
+# npm
 npm install zod-to-drizzle
-pnpm
+
+# pnpm
 pnpm add zod-to-drizzle
-yarn
+
+# yarn
 yarn add zod-to-drizzle
-bun
+
+# bun
 bun add zod-to-drizzle
 ```
 
@@ -41,17 +44,18 @@ const UserSchema = z.object({
   role: z.enum(["admin", "user"]),
   createdAt: z.date(),
 });
+
 const usersTable = createTableFromZod("users", UserSchema, {
   dialect: "sqlite",
   primaryKey: "id",
 });
-````
+```
 
-## Supported dialects
+## Supported Dialects
 
 - SQLite
-- PostgreSQL
-- MySQL
+- PostgreSQL (coming soon)
+- MySQL (coming soon)
 
 ## License
 
