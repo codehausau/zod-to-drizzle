@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { UnsupportedZodTypeError } from "./errors";
-import type { DrizzleTable, SupportedDialects, TableOptions } from "./types";
+import type { TableOptions } from "./types";
 import { SQLiteHandler } from "./dialects/sqlite";
-import { type SQLiteTable, sqliteTable } from "drizzle-orm/sqlite-core";
-import { type MySqlTable, mysqlTable } from "drizzle-orm/mysql-core";
-import { type PgTable, pgTable } from "drizzle-orm/pg-core";
+import { sqliteTable } from "drizzle-orm/sqlite-core";
+import { mysqlTable } from "drizzle-orm/mysql-core";
+import { pgTable } from "drizzle-orm/pg-core";
 import type { DialectHandler } from "./dialects/base";
 
 function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
@@ -17,27 +17,6 @@ function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
 			throw new Error("PostgreSQL support coming soon");
 		default:
 			throw new Error(`Unsupported dialect ${dialect}`);
-	}
-}
-
-type TableBuilder<T extends TableOptions<any>["dialect"]> = T extends "sqlite"
-	? typeof sqliteTable
-	: T extends "mysql"
-		? typeof mysqlTable
-		: T extends "postgres"
-			? typeof pgTable
-			: never;
-
-function getTableBuilder(dialect: TableOptions<any>["dialect"]) {
-	switch (dialect) {
-		case "sqlite":
-			return sqliteTable as TableBuilder<NonNullable<T>>;
-		case "mysql":
-			return mysqlTable as TableBuilder<NonNullable<T>>;
-		case "postgres":
-			return pgTable as TableBuilder<NonNullable<T>>;
-		default:
-			return sqliteTable as TableBuilder<NonNullable<T>>;
 	}
 }
 
@@ -75,10 +54,9 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
 	tableName: string,
 	schema: T,
 	options: TableOptions<T> = {},
-): DrizzleTable {
+) {
 	const { dialect = "sqlite", primaryKey } = options;
 	const handler = getDialectHandler(dialect);
-	const tableBuilder = getTableBuilder(dialect);
 
 	const shape = schema.shape;
 	const columns: Record<string, any> = {};
@@ -96,18 +74,16 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
 		}
 	}
 
-	return tableBuilder(tableName, columns);
-
-	// switch (dialect) {
-	// 	case "sqlite":
-	// 		return tableBuilder(tableName, columns) as SQLiteTable<any>;
-	// 	case "mysql":
-	// 		return tableBuilder(tableName, columns) as MySqlTable<any>;
-	// 	case "postgres":
-	// 		return tableBuilder(tableName, columns) as PgTable<any>;
-	// 	default:
-	// 		return tableBuilder(tableName, columns) as SQLiteTable<any>;
-	// }
+	switch (dialect) {
+		case "sqlite":
+			return sqliteTable(tableName, columns);
+		case "mysql":
+			return mysqlTable(tableName, columns);
+		case "postgres":
+			return pgTable(tableName, columns);
+		default:
+			return sqliteTable(tableName, columns);
+	}
 }
 
 export * from "./types";
