@@ -1,0 +1,8 @@
+[test]
+preload = "./tests/setup.ts"
+
+[build]
+entrypoints = ["./src/index.ts"]
+outdir = "./dist"
+minify = true
+sourcemap = "external"
