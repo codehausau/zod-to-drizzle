@@ -9,9 +9,18 @@ describe("createTableFromZod", () => {
 			ADMIN = "admin",
 			USER = "user",
 		}
-
-		const UserSchema = z.object({
+		const CommonSchema = z.object({
 			id: z.number(),
+			createdAt: z.number().default(Date.now()),
+			updatedAt: z.number().nullish(),
+			deletedAt: z.number().nullish(),
+			createdBy: z.number(),
+			updatedBy: z.number().nullish(),
+			deletedBy: z.number().nullish(),
+			deleted: z.boolean().default(false),
+		});
+
+		const UserSchema = CommonSchema.extend({
 			name: z.string(),
 			email: z.string().optional(),
 			isAdmin: z.boolean(),
@@ -19,7 +28,6 @@ describe("createTableFromZod", () => {
 			tags: z.array(z.string()),
 			role: z.enum(["admin", "user"]),
 			newRole: z.nativeEnum(Role).optional(),
-			createdAt: z.date(),
 		});
 
 		const table = createTableFromZod("users", UserSchema, {
@@ -79,8 +87,8 @@ describe("createTableFromZod", () => {
 
 		// Date
 		expect(columns.createdAt.name).toBe("createdAt");
-		expect(columns.createdAt.notNull).toBe(true);
-		expect(columns.createdAt.columnType).toBe("SQLiteText");
+		expect(columns.createdAt.notNull).toBe(false);
+		expect(columns.createdAt.columnType).toBe("SQLiteInteger");
 	});
 
 	test("should handle optional fields correctly", () => {
@@ -143,7 +151,7 @@ describe("createTableFromZod", () => {
 		expect(columns.optional.notNull).toBe(false);
 		expect(columns.nullable.notNull).toBe(false);
 		expect(columns.nullish.notNull).toBe(false);
-		expect(columns.withDefault.notNull).toBe(true);
+		expect(columns.withDefault.notNull).toBe(false);
 	});
 
 	test("should handle complex types", () => {
@@ -165,5 +173,31 @@ describe("createTableFromZod", () => {
 		expect(columns.record.columnType).toBe("SQLiteText");
 		expect(columns.map.columnType).toBe("SQLiteText");
 		expect(columns.set.columnType).toBe("SQLiteText");
+	});
+
+	test("should handle default values and nullish fields", () => {
+		const Schema = z.object({
+			id: z.number(),
+			createdAt: z.number().default(Date.now()),
+			updatedAt: z.number().nullish(),
+			deletedAt: z.number().nullish(),
+			createdBy: z.number(),
+			updatedBy: z.number().nullish(),
+			deletedBy: z.number().nullish(),
+			deleted: z.boolean().default(false),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+			primaryKey: "id",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+
+		expect(columns.id.notNull).toBe(true);
+		expect(columns.createdAt.notNull).toBe(false); // Has default
+		expect(columns.updatedAt.notNull).toBe(false); // Nullish
+		expect(columns.createdBy.notNull).toBe(true);
+		expect(columns.deleted.notNull).toBe(false); // Has default
 	});
 });

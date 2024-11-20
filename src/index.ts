@@ -20,25 +20,30 @@ function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
 	}
 }
 
-function isOptionalType(value: z.ZodTypeAny): boolean {
+function isOptionalType(schema: z.ZodTypeAny): boolean {
 	return (
-		value instanceof z.ZodOptional ||
-		value instanceof z.ZodNullable ||
-		value instanceof z.ZodNullable
+		schema instanceof z.ZodOptional ||
+		schema instanceof z.ZodNullable ||
+		schema instanceof z.ZodNullable ||
+		hasDefault(schema)
 	);
 }
 
-function unwrapType(value: z.ZodTypeAny): z.ZodTypeAny {
-	if (value instanceof z.ZodOptional) {
-		return unwrapType(value.unwrap());
+function hasDefault(schema: z.ZodTypeAny): boolean {
+	return schema instanceof z.ZodDefault;
+}
+
+function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
+	if (schema instanceof z.ZodOptional) {
+		return unwrapType(schema.unwrap());
 	}
-	if (value instanceof z.ZodNullable) {
-		return unwrapType(value.unwrap());
+	if (schema instanceof z.ZodNullable) {
+		return unwrapType(schema.unwrap());
 	}
-	if (value instanceof z.ZodDefault) {
-		return unwrapType(value.removeDefault());
+	if (schema instanceof z.ZodDefault) {
+		return unwrapType(schema.removeDefault());
 	}
-	return value;
+	return schema;
 }
 
 function zodToDrizzle(
@@ -46,63 +51,66 @@ function zodToDrizzle(
 	isOptional: boolean,
 	handler: DialectHandler,
 ) {
-	if (schema instanceof z.ZodString) {
+	const baseType = unwrapType(schema);
+	const withDefault = hasDefault(schema);
+
+	if (baseType instanceof z.ZodNumber) {
+		return handler.number(isOptional, withDefault);
+	}
+	if (baseType instanceof z.ZodBoolean) {
+		return handler.boolean(isOptional, withDefault);
+	}
+	if (baseType instanceof z.ZodString) {
 		return handler.string(isOptional);
 	}
-	if (schema instanceof z.ZodNumber || schema instanceof z.ZodBigInt) {
-		return handler.number(isOptional);
-	}
-	if (schema instanceof z.ZodBoolean) {
-		return handler.boolean(isOptional);
-	}
-	if (schema instanceof z.ZodObject) {
+	if (baseType instanceof z.ZodObject) {
 		return handler.json(isOptional);
 	}
-	if (schema instanceof z.ZodArray) {
+	if (baseType instanceof z.ZodArray) {
 		return handler.json(isOptional);
 	}
-	if (schema instanceof z.ZodEnum) {
+	if (baseType instanceof z.ZodEnum) {
 		return handler.enum(isOptional);
 	}
-	if (schema instanceof z.ZodNativeEnum) {
+	if (baseType instanceof z.ZodNativeEnum) {
 		return handler.nativeEnum(isOptional);
 	}
-	if (schema instanceof z.ZodDate) {
+	if (baseType instanceof z.ZodDate) {
 		return handler.date(isOptional);
 	}
-	if (schema instanceof z.ZodNull || schema instanceof z.ZodUndefined) {
+	if (baseType instanceof z.ZodNull || baseType instanceof z.ZodUndefined) {
 		return handler.string(true); // Always optional
 	}
-	if (schema instanceof z.ZodLiteral) {
+	if (baseType instanceof z.ZodLiteral) {
 		// Handle based on literal type
-		const literalValue = schema._def.value;
+		const literalValue = baseType._def.value;
 		if (typeof literalValue === "string") {
 			return handler.string(isOptional);
 		}
 		if (typeof literalValue === "number") {
-			return handler.number(isOptional);
+			return handler.number(isOptional, withDefault);
 		}
 		if (typeof literalValue === "boolean") {
-			return handler.boolean(isOptional);
+			return handler.boolean(isOptional, withDefault);
 		}
 	}
 	if (
-		schema instanceof z.ZodUnion ||
-		schema instanceof z.ZodDiscriminatedUnion
+		baseType instanceof z.ZodUnion ||
+		baseType instanceof z.ZodDiscriminatedUnion
 	) {
 		return handler.json(isOptional);
 	}
-	if (schema instanceof z.ZodRecord) {
+	if (baseType instanceof z.ZodRecord) {
 		return handler.json(isOptional);
 	}
-	if (schema instanceof z.ZodMap) {
+	if (baseType instanceof z.ZodMap) {
 		return handler.json(isOptional);
 	}
-	if (schema instanceof z.ZodSet) {
+	if (baseType instanceof z.ZodSet) {
 		return handler.json(isOptional);
 	}
 
-	throw new UnsupportedZodTypeError(schema._def.typeName);
+	throw new UnsupportedZodTypeError(baseType._def.typeName);
 }
 
 export function createTableFromZod<T extends z.ZodObject<any>>(
@@ -115,15 +123,16 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
 
 	const shape = schema.shape;
 	const columns: Record<string, any> = {};
+
 	for (const [key, value] of Object.entries(shape)) {
 		const isOptional = isOptionalType(value as z.ZodTypeAny);
-		const baseType = unwrapType(value as z.ZodTypeAny);
-
-		columns[key] = zodToDrizzle(baseType, isOptional, handler);
 
 		if (primaryKey === key) {
 			columns[key] = handler.primaryKey(schema);
+			continue;
 		}
+
+		columns[key] = zodToDrizzle(value as z.ZodTypeAny, isOptional, handler);
 	}
 
 	switch (dialect) {
