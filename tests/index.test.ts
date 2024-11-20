@@ -5,15 +5,29 @@ import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 
 describe("createTableFromZod", () => {
 	test("should create a SQLite table with correct structure", () => {
-		const UserSchema = z.object({
+		enum Role {
+			ADMIN = "admin",
+			USER = "user",
+		}
+		const CommonSchema = z.object({
 			id: z.number(),
+			createdAt: z.number().default(Date.now()),
+			updatedAt: z.number().nullish(),
+			deletedAt: z.number().nullish(),
+			createdBy: z.number(),
+			updatedBy: z.number().nullish(),
+			deletedBy: z.number().nullish(),
+			deleted: z.boolean().default(false),
+		});
+
+		const UserSchema = CommonSchema.extend({
 			name: z.string(),
 			email: z.string().optional(),
 			isAdmin: z.boolean(),
 			metadata: z.object({ key: z.string() }),
 			tags: z.array(z.string()),
 			role: z.enum(["admin", "user"]),
-			createdAt: z.date(),
+			newRole: z.nativeEnum(Role).optional(),
 		});
 
 		const table = createTableFromZod("users", UserSchema, {
@@ -66,10 +80,15 @@ describe("createTableFromZod", () => {
 		expect(columns.role.notNull).toBe(true);
 		expect(columns.role.columnType).toBe("SQLiteText");
 
+		// Native Enum
+		expect(columns.newRole.name).toBe("newRole");
+		expect(columns.newRole.notNull).toBe(false);
+		expect(columns.newRole.columnType).toBe("SQLiteText");
+
 		// Date
 		expect(columns.createdAt.name).toBe("createdAt");
-		expect(columns.createdAt.notNull).toBe(true);
-		expect(columns.createdAt.columnType).toBe("SQLiteText");
+		expect(columns.createdAt.notNull).toBe(false);
+		expect(columns.createdAt.columnType).toBe("SQLiteInteger");
 	});
 
 	test("should handle optional fields correctly", () => {
@@ -112,5 +131,73 @@ describe("createTableFromZod", () => {
 				dialect: "postgres", // Currently unsupported
 			}),
 		).toThrow("PostgreSQL support coming soon");
+	});
+
+	test("should handle nullable and optional types", () => {
+		const Schema = z.object({
+			required: z.string(),
+			optional: z.string().optional(),
+			nullable: z.string().nullable(),
+			nullish: z.string().nullish(),
+			withDefault: z.string().default("default"),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+		expect(columns.required.notNull).toBe(true);
+		expect(columns.optional.notNull).toBe(false);
+		expect(columns.nullable.notNull).toBe(false);
+		expect(columns.nullish.notNull).toBe(false);
+		expect(columns.withDefault.notNull).toBe(false);
+	});
+
+	test("should handle complex types", () => {
+		const Schema = z.object({
+			union: z.union([z.string(), z.number()]),
+			literal: z.literal("value"),
+			record: z.record(z.string()),
+			map: z.map(z.string(), z.number()),
+			set: z.set(z.string()),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+		expect(columns.union.columnType).toBe("SQLiteText");
+		expect(columns.literal.notNull).toBe(true);
+		expect(columns.record.columnType).toBe("SQLiteText");
+		expect(columns.map.columnType).toBe("SQLiteText");
+		expect(columns.set.columnType).toBe("SQLiteText");
+	});
+
+	test("should handle default values and nullish fields", () => {
+		const Schema = z.object({
+			id: z.number(),
+			createdAt: z.number().default(Date.now()),
+			updatedAt: z.number().nullish(),
+			deletedAt: z.number().nullish(),
+			createdBy: z.number(),
+			updatedBy: z.number().nullish(),
+			deletedBy: z.number().nullish(),
+			deleted: z.boolean().default(false),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+			primaryKey: "id",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+
+		expect(columns.id.notNull).toBe(true);
+		expect(columns.createdAt.notNull).toBe(false); // Has default
+		expect(columns.updatedAt.notNull).toBe(false); // Nullish
+		expect(columns.createdBy.notNull).toBe(true);
+		expect(columns.deleted.notNull).toBe(false); // Has default
 	});
 });

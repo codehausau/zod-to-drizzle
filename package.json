@@ -1,6 +1,6 @@
 {
   "name": "zod-to-drizzle",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Create Drizzle ORM tables from Zod schemas",
   "type": "module",
   "module": "./dist/index.js",
@@ -32,7 +32,9 @@
     "postgres",
     "mysql"
   ],
-  "author": "bil0ak",
+  "author": "bil0ak <contact@bilalakkil.com> (https://github.com/bil0ak)",
+  "repository": "https://github.com/bil0ak/zod-to-drizzle",
+  "homepage": "https://github.com/bil0ak/zod-to-drizzle",
   "license": "MIT",
   "dependencies": {
     "drizzle-orm": "^0.36.3",

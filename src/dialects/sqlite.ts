@@ -11,16 +11,16 @@ export class SQLiteHandler extends DialectHandler {
 			: (column.notNull() as unknown as ColumnWithMeta);
 	}
 
-	number(isOptional: boolean): ColumnWithMeta {
+	number(isOptional: boolean, hasDefault = false): ColumnWithMeta {
 		const column = integer();
-		return isOptional
+		return isOptional || hasDefault
 			? (column as unknown as ColumnWithMeta)
 			: (column.notNull() as unknown as ColumnWithMeta);
 	}
 
-	boolean(isOptional: boolean): ColumnWithMeta {
+	boolean(isOptional: boolean, hasDefault = false): ColumnWithMeta {
 		const column = integer();
-		return isOptional
+		return isOptional || hasDefault
 			? (column as unknown as ColumnWithMeta)
 			: (column.notNull() as unknown as ColumnWithMeta);
 	}
@@ -35,13 +35,20 @@ export class SQLiteHandler extends DialectHandler {
 	}
 
 	date(isOptional: boolean): ColumnWithMeta {
-		const column = text();
+		const column = integer();
 		return isOptional
 			? (column as unknown as ColumnWithMeta)
 			: (column.notNull() as unknown as ColumnWithMeta);
 	}
 
 	enum(isOptional: boolean): ColumnWithMeta {
+		const column = text();
+		return isOptional
+			? (column as unknown as ColumnWithMeta)
+			: (column.notNull() as unknown as ColumnWithMeta);
+	}
+
+	nativeEnum(isOptional: boolean): ColumnWithMeta {
 		const column = text();
 		return isOptional
 			? (column as unknown as ColumnWithMeta)
