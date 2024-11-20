@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
 
 jobs:
   # Only run publish jobs if both conditions are met:
