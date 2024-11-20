@@ -4,21 +4,12 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
 jobs:
-  # Only run publish jobs if both conditions are met:
-  # 1. Push is to main branch
-  # 2. Has a version tag
-  should-publish:
-    runs-on: ubuntu-latest
-    outputs:
-      should-run: ${{ github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v') }}
-    steps:
-      - run: echo "Checking publish conditions"
-
   build:
-    needs: should-publish
-    if: needs.should-publish.outputs.should-run == 'true'
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +28,7 @@ jobs:
         run: bun run build:all
 
   publish-npm:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +55,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: publish-npm
     runs-on: ubuntu-latest
     permissions:
