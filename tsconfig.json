@@ -4,14 +4,13 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["bun-types"],
-    "allowJs": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "rootDir": "src"
+    "allowSyntheticDefaultImports": true,
+    "preserveConstEnums": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
