@@ -8,5 +8,6 @@ export abstract class DialectHandler {
 	abstract json(isOptional: boolean): ColumnWithMeta;
 	abstract date(isOptional: boolean): ColumnWithMeta;
 	abstract enum(isOptional: boolean): ColumnWithMeta;
+	abstract nativeEnum(isOptional: boolean): ColumnWithMeta;
 	abstract primaryKey(zodType: z.ZodType): ColumnWithMeta;
 }

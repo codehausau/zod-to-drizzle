@@ -48,6 +48,13 @@ export class SQLiteHandler extends DialectHandler {
 			: (column.notNull() as unknown as ColumnWithMeta);
 	}
 
+	nativeEnum(isOptional: boolean): ColumnWithMeta {
+		const column = text();
+		return isOptional
+			? (column as unknown as ColumnWithMeta)
+			: (column.notNull() as unknown as ColumnWithMeta);
+	}
+
 	primaryKey(zodType: z.ZodType): ColumnWithMeta {
 		if (zodType instanceof z.ZodString) {
 			return text().primaryKey() as unknown as ColumnWithMeta;

@@ -5,6 +5,11 @@ import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 
 describe("createTableFromZod", () => {
 	test("should create a SQLite table with correct structure", () => {
+		enum Role {
+			ADMIN = "admin",
+			USER = "user",
+		}
+
 		const UserSchema = z.object({
 			id: z.number(),
 			name: z.string(),
@@ -13,6 +18,7 @@ describe("createTableFromZod", () => {
 			metadata: z.object({ key: z.string() }),
 			tags: z.array(z.string()),
 			role: z.enum(["admin", "user"]),
+			newRole: z.nativeEnum(Role).optional(),
 			createdAt: z.date(),
 		});
 
@@ -66,6 +72,11 @@ describe("createTableFromZod", () => {
 		expect(columns.role.notNull).toBe(true);
 		expect(columns.role.columnType).toBe("SQLiteText");
 
+		// Native Enum
+		expect(columns.newRole.name).toBe("newRole");
+		expect(columns.newRole.notNull).toBe(false);
+		expect(columns.newRole.columnType).toBe("SQLiteText");
+
 		// Date
 		expect(columns.createdAt.name).toBe("createdAt");
 		expect(columns.createdAt.notNull).toBe(true);
@@ -112,5 +123,47 @@ describe("createTableFromZod", () => {
 				dialect: "postgres", // Currently unsupported
 			}),
 		).toThrow("PostgreSQL support coming soon");
+	});
+
+	test("should handle nullable and optional types", () => {
+		const Schema = z.object({
+			required: z.string(),
+			optional: z.string().optional(),
+			nullable: z.string().nullable(),
+			nullish: z.string().nullish(),
+			withDefault: z.string().default("default"),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+		expect(columns.required.notNull).toBe(true);
+		expect(columns.optional.notNull).toBe(false);
+		expect(columns.nullable.notNull).toBe(false);
+		expect(columns.nullish.notNull).toBe(false);
+		expect(columns.withDefault.notNull).toBe(true);
+	});
+
+	test("should handle complex types", () => {
+		const Schema = z.object({
+			union: z.union([z.string(), z.number()]),
+			literal: z.literal("value"),
+			record: z.record(z.string()),
+			map: z.map(z.string(), z.number()),
+			set: z.set(z.string()),
+		});
+
+		const table = createTableFromZod("test", Schema, {
+			dialect: "sqlite",
+		}) as SQLiteTable;
+
+		const columns = (table as any)[Symbol.for("drizzle:Columns")];
+		expect(columns.union.columnType).toBe("SQLiteText");
+		expect(columns.literal.notNull).toBe(true);
+		expect(columns.record.columnType).toBe("SQLiteText");
+		expect(columns.map.columnType).toBe("SQLiteText");
+		expect(columns.set.columnType).toBe("SQLiteText");
 	});
 });
