@@ -24,7 +24,7 @@ jobs:
       - name: Build
         run: bun run build:all
 
-  publish:
+  publish-npm:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "22.11.0"
           registry-url: "https://registry.npmjs.org"
 
       - uses: oven-sh/setup-bun@v1
@@ -49,3 +49,17 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  create-release:
+    needs: publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          prerelease: false
