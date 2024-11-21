@@ -1,75 +1,168 @@
 # zod-to-drizzle
 
-Create Drizzle ORM tables from Zod schemas with support for multiple SQL dialects.
+Convert [Zod](https://zod.dev) schemas to [Drizzle ORM](https://orm.drizzle.team) tables with TypeScript support.
+
+## Features
+
+- 🚀 Convert Zod schemas to Drizzle tables
+- 🔑 Automatic primary key handling
+- 🔗 Type-safe foreign key references
+- 📝 Full TypeScript support
+- 🎯 Support for SQLite (PostgreSQL & MySQL coming soon)
+- 🎨 Support for all common Zod types
 
 ## Installation
 
 ```bash
-# npm
-npm install zod-to-drizzle
-
-# pnpm
-pnpm add zod-to-drizzle
-
-# yarn
-yarn add zod-to-drizzle
-
-# bun
 bun add zod-to-drizzle
+# or
+npm install zod-to-drizzle
+# or
+pnpm add zod-to-drizzle
+# or
+yarn add zod-to-drizzle
 ```
 
-## Features
-
-- Convert Zod schemas to Drizzle ORM tables
-- Support for multiple SQL dialects (SQLite, PostgreSQL, MySQL)
-- Automatic type interface generation
-- Primary key support
-- Nested object support
-
-## Usage
+## Quick Start
 
 ```typescript
-import { z } from "zod";
-import { createTableFromZod } from "zod-to-drizzle";
+import { createTableFromZod } from 'zod-to-drizzle';
+import { z } from 'zod';
+import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 
+// Define your schema
 const UserSchema = z.object({
   id: z.number(),
   name: z.string(),
-  isAdmin: z.boolean(),
-  email: z.string().email(),
-  metadata: z.object({
-    key: z.string(),
-  }),
-  tags: z.array(z.string()),
-  role: z.enum(["admin", "user"]),
-  createdAt: z.date(),
+  email: z.string().email().optional(),
+  createdAt: z.number().default(Date.now),
 });
 
-const usersTable = createTableFromZod("users", UserSchema, {
+// Create a table
+const users = createTableFromZod("users", UserSchema, {
+  dialect: "sqlite",
+  primaryKey: "id",
+}) as SQLiteTable;
+```
+
+## Foreign Keys
+
+```typescript
+// Define schemas
+const UserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+});
+
+const PostSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  userId: z.number(),
+});
+
+// Create tables with references
+const users = createTableFromZod("users", UserSchema, {
+  dialect: "sqlite",
+  primaryKey: "id",
+});
+
+const posts = createTableFromZod("posts", PostSchema, {
+  dialect: "sqlite",
+  primaryKey: "id",
+  references: [{
+    table: users,
+    columns: [["userId", "id"]],
+  }],
+});
+```
+
+## Supported Types
+
+| Zod Type | SQLite | PostgreSQL | MySQL |
+|----------|---------|------------|-------|
+| `z.string()` | ✅ | 🔜 | 🔜 |
+| `z.number()` | ✅ | 🔜 | 🔜 |
+| `z.boolean()` | ✅ | 🔜 | 🔜 |
+| `z.date()` | ✅ | 🔜 | 🔜 |
+| `z.enum()` | ✅ | 🔜 | 🔜 |
+| `z.object()` (JSON) | ✅ | 🔜 | 🔜 |
+| `z.array()` (JSON) | ✅ | 🔜 | 🔜 |
+| `z.optional()` | ✅ | 🔜 | 🔜 |
+| `z.nullable()` | ✅ | 🔜 | 🔜 |
+| `z.default()` | ✅ | 🔜 | 🔜 |
+
+## API Reference
+
+### createTableFromZod
+
+```typescript
+function createTableFromZod<T extends z.ZodObject<any>>(
+  tableName: string,
+  schema: T,
+  options: {
+    dialect?: "sqlite" | "postgres" | "mysql";
+    primaryKey?: keyof z.infer<T>;
+    references?: Array<{
+      table: SQLiteTable;
+      columns: [keyof z.infer<T>, string][];
+    }>;
+  }
+)
+```
+
+#### Parameters
+
+- `tableName`: The name of the table
+- `schema`: Zod object schema
+- `options`:
+  - `dialect`: Database dialect (default: "sqlite")
+  - `primaryKey`: Column to use as primary key
+  - `references`: Array of foreign key references
+
+## Examples
+
+### Common Schema Pattern
+
+```typescript
+const CommonSchema = z.object({
+  id: z.number(),
+  createdAt: z.number().default(Date.now()),
+  updatedAt: z.number().nullish(),
+  deletedAt: z.number().nullish(),
+  createdBy: z.number(),
+  updatedBy: z.number().nullish(),
+  deletedBy: z.number().nullish(),
+  deleted: z.boolean().default(false),
+});
+
+const UserSchema = CommonSchema.extend({
+  name: z.string(),
+  email: z.string().email(),
+  role: z.enum(["admin", "user"]),
+});
+
+const users = createTableFromZod("users", UserSchema, {
   dialect: "sqlite",
   primaryKey: "id",
 });
 ```
 
-## Supported Dialects
+### Complex Types
 
-- SQLite
-- PostgreSQL (coming soon)
-- MySQL (coming soon)
-
-## License
-
-Apache 2.0
-
-## Requirements
-
-- TypeScript >= 5.0.0
-- Node.js >= 20.x
-- `zod` >= 3.0.0
-- `drizzle-orm` >= 0.29.0
-
-This package is distributed as TypeScript source files and requires TypeScript to be installed in your project.
+```typescript
+const Schema = z.object({
+  id: z.number(),
+  metadata: z.object({ key: z.string() }), // Stored as JSON (TEXT in SQLite)
+  tags: z.array(z.string()),               // Stored as JSON (TEXT in SQLite)
+  settings: z.record(z.string()),          // Stored as JSON (TEXT in SQLite)
+  role: z.enum(["admin", "user"]),        // Stored as text
+});
+```
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
+
+## License
+
+Apache-2.0 - see [LICENSE](LICENSE) for details.
