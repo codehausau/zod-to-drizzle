@@ -7,16 +7,48 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
       - name: Install dependencies
         run: bun install
-      - name: Run tests
-        run: bun test
+      
       - name: Type check
         run: bun run typecheck
+      
       - name: Format check
         run: bun run format --check
+      
+      - name: Run tests
+        run: bun test
+        
+      - name: Build
+        run: bun run build
+
+  verify-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v2
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Build
+        run: bun run build
+      
+      - name: Pack
+        run: bun pack
+      
+      - name: Verify package contents
+        run: |
+          tar -ztvf zod-to-drizzle-*.tgz | grep -q "dist/"
+          tar -ztvf zod-to-drizzle-*.tgz | grep -q "dist/index.js"
+          tar -ztvf zod-to-drizzle-*.tgz | grep -q "dist/index.d.ts"
