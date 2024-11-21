@@ -26,9 +26,9 @@ yarn add zod-to-drizzle
 ## Quick Start
 
 ```typescript
-import { createTableFromZod } from 'zod-to-drizzle';
-import { z } from 'zod';
-import { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { createTableFromZod } from "zod-to-drizzle";
+import { z } from "zod";
+import { SQLiteTable } from "drizzle-orm/sqlite-core";
 
 // Define your schema
 const UserSchema = z.object({
@@ -69,27 +69,29 @@ const users = createTableFromZod("users", UserSchema, {
 const posts = createTableFromZod("posts", PostSchema, {
   dialect: "sqlite",
   primaryKey: "id",
-  references: [{
-    table: users,
-    columns: [["userId", "id"]],
-  }],
+  references: [
+    {
+      table: users,
+      columns: [["userId", "id"]],
+    },
+  ],
 });
 ```
 
 ## Supported Types
 
-| Zod Type | SQLite | PostgreSQL | MySQL |
-|----------|---------|------------|-------|
-| `z.string()` | ✅ | 🔜 | 🔜 |
-| `z.number()` | ✅ | 🔜 | 🔜 |
-| `z.boolean()` | ✅ | 🔜 | 🔜 |
-| `z.date()` | ✅ | 🔜 | 🔜 |
-| `z.enum()` | ✅ | 🔜 | 🔜 |
-| `z.object()` (JSON) | ✅ | 🔜 | 🔜 |
-| `z.array()` (JSON) | ✅ | 🔜 | 🔜 |
-| `z.optional()` | ✅ | 🔜 | 🔜 |
-| `z.nullable()` | ✅ | 🔜 | 🔜 |
-| `z.default()` | ✅ | 🔜 | 🔜 |
+| Zod Type            | SQLite | PostgreSQL | MySQL |
+| ------------------- | ------ | ---------- | ----- |
+| `z.string()`        | ✅     | 🔜         | 🔜    |
+| `z.number()`        | ✅     | 🔜         | 🔜    |
+| `z.boolean()`       | ✅     | 🔜         | 🔜    |
+| `z.date()`          | ✅     | 🔜         | 🔜    |
+| `z.enum()`          | ✅     | 🔜         | 🔜    |
+| `z.object()` (JSON) | ✅     | 🔜         | 🔜    |
+| `z.array()` (JSON)  | ✅     | 🔜         | 🔜    |
+| `z.optional()`      | ✅     | 🔜         | 🔜    |
+| `z.nullable()`      | ✅     | 🔜         | 🔜    |
+| `z.default()`       | ✅     | 🔜         | 🔜    |
 
 ## API Reference
 
@@ -106,8 +108,8 @@ function createTableFromZod<T extends z.ZodObject<any>>(
       table: SQLiteTable;
       columns: [keyof z.infer<T>, string][];
     }>;
-  }
-)
+  },
+);
 ```
 
 #### Parameters
@@ -153,9 +155,9 @@ const users = createTableFromZod("users", UserSchema, {
 const Schema = z.object({
   id: z.number(),
   metadata: z.object({ key: z.string() }), // Stored as JSON (TEXT in SQLite)
-  tags: z.array(z.string()),               // Stored as JSON (TEXT in SQLite)
-  settings: z.record(z.string()),          // Stored as JSON (TEXT in SQLite)
-  role: z.enum(["admin", "user"]),        // Stored as text
+  tags: z.array(z.string()), // Stored as JSON (TEXT in SQLite)
+  settings: z.record(z.string()), // Stored as JSON (TEXT in SQLite)
+  role: z.enum(["admin", "user"]), // Stored as text
 });
 ```
 
