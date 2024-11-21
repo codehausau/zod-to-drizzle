@@ -6,8 +6,7 @@ on:
       - main
 
 jobs:
-  # Run tests
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,14 +21,31 @@ jobs:
       - name: Type check
         run: bun run typecheck
 
+      - name: Format check
+        run: bun run format --check
+
       - name: Run tests
         run: bun test
 
+      - name: Build
+        run: bun run build
+
   publish:
-    needs: test
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22.11.0"
@@ -39,6 +55,7 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
 
   # Create GitHub release
   release:
