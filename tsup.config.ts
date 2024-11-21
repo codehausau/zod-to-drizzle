@@ -11,4 +11,4 @@ export default defineConfig({
       js: format === "esm" ? ".js" : ".cjs",
     };
   },
-}); 
+});

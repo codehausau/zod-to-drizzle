@@ -7,6 +7,7 @@ First off, thanks for taking the time to contribute! 🎉
 1. Fork the repository
 2. Clone your fork
 3. Install dependencies:
+
 ```bash
 bun install
 ```
@@ -14,6 +15,7 @@ bun install
 ## Development Process
 
 1. Create a new branch:
+
 ```bash
 git checkout -b feat/your-feature
 # or
@@ -23,16 +25,19 @@ git checkout -b fix/your-fix
 2. Make your changes
 
 3. Run tests:
+
 ```bash
 bun test
 ```
 
 4. Run type check:
+
 ```bash
 bun run typecheck
 ```
 
 5. Format code:
+
 ```bash
 bun run format
 ```
@@ -64,4 +69,4 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Your commit
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the Apache-2.0 License. 
+By contributing, you agree that your contributions will be licensed under the Apache-2.0 License.
