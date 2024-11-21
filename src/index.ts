@@ -34,14 +34,14 @@ function hasDefault(schema: z.ZodTypeAny): boolean {
 }
 
 function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
-	if (schema instanceof z.ZodOptional) {
-		return unwrapType(schema.unwrap());
+	if (schema._def.typeName === "ZodDefault") {
+		return unwrapType((schema as z.ZodDefault<any>).removeDefault());
 	}
-	if (schema instanceof z.ZodNullable) {
-		return unwrapType(schema.unwrap());
+	if (schema._def.typeName === "ZodOptional") {
+		return unwrapType((schema as z.ZodOptional<any>).unwrap());
 	}
-	if (schema instanceof z.ZodDefault) {
-		return unwrapType(schema.removeDefault());
+	if (schema._def.typeName === "ZodNullable") {
+		return unwrapType((schema as z.ZodNullable<any>).unwrap());
 	}
 	return schema;
 }
@@ -54,34 +54,37 @@ function zodToDrizzle(
 	const baseType = unwrapType(schema);
 	const withDefault = hasDefault(schema);
 
-	if (baseType instanceof z.ZodNumber) {
+	if (baseType._def.typeName === "ZodNumber") {
 		return handler.number(isOptional, withDefault);
 	}
-	if (baseType instanceof z.ZodBoolean) {
+	if (baseType._def.typeName === "ZodBoolean") {
 		return handler.boolean(isOptional, withDefault);
 	}
-	if (baseType instanceof z.ZodString) {
+	if (baseType._def.typeName === "ZodString") {
 		return handler.string(isOptional);
 	}
-	if (baseType instanceof z.ZodObject) {
+	if (baseType._def.typeName === "ZodObject") {
 		return handler.json(isOptional);
 	}
-	if (baseType instanceof z.ZodArray) {
+	if (baseType._def.typeName === "ZodArray") {
 		return handler.json(isOptional);
 	}
-	if (baseType instanceof z.ZodEnum) {
+	if (baseType._def.typeName === "ZodEnum") {
 		return handler.enum(isOptional);
 	}
-	if (baseType instanceof z.ZodNativeEnum) {
+	if (baseType._def.typeName === "ZodNativeEnum") {
 		return handler.nativeEnum(isOptional);
 	}
-	if (baseType instanceof z.ZodDate) {
+	if (baseType._def.typeName === "ZodDate") {
 		return handler.date(isOptional);
 	}
-	if (baseType instanceof z.ZodNull || baseType instanceof z.ZodUndefined) {
+	if (
+		baseType._def.typeName === "ZodNull" ||
+		baseType._def.typeName === "ZodUndefined"
+	) {
 		return handler.string(true); // Always optional
 	}
-	if (baseType instanceof z.ZodLiteral) {
+	if (baseType._def.typeName === "ZodLiteral") {
 		// Handle based on literal type
 		const literalValue = baseType._def.value;
 		if (typeof literalValue === "string") {
@@ -95,18 +98,18 @@ function zodToDrizzle(
 		}
 	}
 	if (
-		baseType instanceof z.ZodUnion ||
-		baseType instanceof z.ZodDiscriminatedUnion
+		baseType._def.typeName === "ZodUnion" ||
+		baseType._def.typeName === "ZodDiscriminatedUnion"
 	) {
 		return handler.json(isOptional);
 	}
-	if (baseType instanceof z.ZodRecord) {
+	if (baseType._def.typeName === "ZodRecord") {
 		return handler.json(isOptional);
 	}
-	if (baseType instanceof z.ZodMap) {
+	if (baseType._def.typeName === "ZodMap") {
 		return handler.json(isOptional);
 	}
-	if (baseType instanceof z.ZodSet) {
+	if (baseType._def.typeName === "ZodSet") {
 		return handler.json(isOptional);
 	}
 
