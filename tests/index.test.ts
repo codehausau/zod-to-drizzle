@@ -201,3 +201,38 @@ describe("createTableFromZod", () => {
     expect(columns.deleted.notNull).toBe(false); // Has default
   });
 });
+
+describe("zodToDrizzle", () => {
+  test("should handle references", () => {
+    const UserSchema = z.object({
+      id: z.number(),
+      name: z.string(),
+    });
+
+    const PostSchema = z.object({
+      id: z.number(),
+      title: z.string(),
+      userId: z.number(),
+    });
+
+    const users = createTableFromZod("users", UserSchema, {
+      dialect: "sqlite",
+      primaryKey: "id",
+    });
+
+    const posts = createTableFromZod("posts", PostSchema, {
+      dialect: "sqlite",
+      primaryKey: "id",
+      references: [
+        {
+          table: users,
+          columns: [["userId", "id"]],
+        },
+      ],
+    });
+
+    console.log(posts);
+
+    expect(posts).toBeDefined();
+  });
+});

@@ -1,18 +1,37 @@
 import { integer, text } from "drizzle-orm/sqlite-core";
 import { DialectHandler } from "./base";
-import type { ColumnWithMeta } from "../types";
+import type { ColumnWithMeta, TableOptions } from "../types";
 import { z } from "zod";
 
 export class SQLiteHandler extends DialectHandler {
-  string(isOptional: boolean): ColumnWithMeta {
-    const column = text();
+  string(
+    isOptional: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    const column = refs
+      ? text().references(() => {
+          const table = refs[0]?.table;
+          const column = refs[0]?.columns[0]?.[1] ?? "";
+          return table?.[column];
+        })
+      : text();
     return isOptional
       ? (column as unknown as ColumnWithMeta)
       : (column.notNull() as unknown as ColumnWithMeta);
   }
 
-  number(isOptional: boolean, hasDefault = false): ColumnWithMeta {
-    const column = integer();
+  number(
+    isOptional: boolean,
+    hasDefault = false,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    const column = refs
+      ? integer().references(() => {
+          const table = refs[0]?.table;
+          const column = refs[0]?.columns[0]?.[1] ?? "";
+          return table?.[column];
+        })
+      : integer();
     return isOptional || hasDefault
       ? (column as unknown as ColumnWithMeta)
       : (column.notNull() as unknown as ColumnWithMeta);
