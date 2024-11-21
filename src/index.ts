@@ -8,29 +8,29 @@ import { pgTable } from "drizzle-orm/pg-core";
 import type { DialectHandler } from "./dialects/base";
 
 function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
-	switch (dialect) {
-		case "sqlite":
-			return new SQLiteHandler();
-		case "mysql":
-			throw new Error("MySQL support coming soon");
-		case "postgres":
-			throw new Error("PostgreSQL support coming soon");
-		default:
-			throw new Error(`Unsupported dialect ${dialect}`);
-	}
+  switch (dialect) {
+    case "sqlite":
+      return new SQLiteHandler();
+    case "mysql":
+      throw new Error("MySQL support coming soon");
+    case "postgres":
+      throw new Error("PostgreSQL support coming soon");
+    default:
+      throw new Error(`Unsupported dialect ${dialect}`);
+  }
 }
 
 function isOptionalType(schema: z.ZodTypeAny): boolean {
-	return (
-		schema instanceof z.ZodOptional ||
-		schema instanceof z.ZodNullable ||
-		schema instanceof z.ZodNullable ||
-		hasDefault(schema)
-	);
+  return (
+    schema instanceof z.ZodOptional ||
+    schema instanceof z.ZodNullable ||
+    schema instanceof z.ZodNullable ||
+    hasDefault(schema)
+  );
 }
 
 function hasDefault(schema: z.ZodTypeAny): boolean {
-	return schema instanceof z.ZodDefault;
+  return schema instanceof z.ZodDefault;
 }
 
 function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
@@ -47,12 +47,12 @@ function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
 }
 
 function zodToDrizzle(
-	schema: z.ZodTypeAny,
-	isOptional: boolean,
-	handler: DialectHandler,
+  schema: z.ZodTypeAny,
+  isOptional: boolean,
+  handler: DialectHandler,
 ) {
-	const baseType = unwrapType(schema);
-	const withDefault = hasDefault(schema);
+  const baseType = unwrapType(schema);
+  const withDefault = hasDefault(schema);
 
 	if (baseType._def.typeName === "ZodNumber") {
 		return handler.number(isOptional, withDefault);
@@ -113,41 +113,41 @@ function zodToDrizzle(
 		return handler.json(isOptional);
 	}
 
-	throw new UnsupportedZodTypeError(baseType._def.typeName);
+  throw new UnsupportedZodTypeError(baseType._def.typeName);
 }
 
 export function createTableFromZod<T extends z.ZodObject<any>>(
-	tableName: string,
-	schema: T,
-	options: TableOptions<T> = {},
+  tableName: string,
+  schema: T,
+  options: TableOptions<T> = {},
 ) {
-	const { dialect = "sqlite", primaryKey } = options;
-	const handler = getDialectHandler(dialect);
+  const { dialect = "sqlite", primaryKey } = options;
+  const handler = getDialectHandler(dialect);
 
-	const shape = schema.shape;
-	const columns: Record<string, any> = {};
+  const shape = schema.shape;
+  const columns: Record<string, any> = {};
 
-	for (const [key, value] of Object.entries(shape)) {
-		const isOptional = isOptionalType(value as z.ZodTypeAny);
+  for (const [key, value] of Object.entries(shape)) {
+    const isOptional = isOptionalType(value as z.ZodTypeAny);
 
-		if (primaryKey === key) {
-			columns[key] = handler.primaryKey(schema);
-			continue;
-		}
+    if (primaryKey === key) {
+      columns[key] = handler.primaryKey(schema);
+      continue;
+    }
 
-		columns[key] = zodToDrizzle(value as z.ZodTypeAny, isOptional, handler);
-	}
+    columns[key] = zodToDrizzle(value as z.ZodTypeAny, isOptional, handler);
+  }
 
-	switch (dialect) {
-		case "sqlite":
-			return sqliteTable(tableName, columns);
-		case "mysql":
-			return mysqlTable(tableName, columns);
-		case "postgres":
-			return pgTable(tableName, columns);
-		default:
-			return sqliteTable(tableName, columns);
-	}
+  switch (dialect) {
+    case "sqlite":
+      return sqliteTable(tableName, columns);
+    case "mysql":
+      return mysqlTable(tableName, columns);
+    case "postgres":
+      return pgTable(tableName, columns);
+    default:
+      return sqliteTable(tableName, columns);
+  }
 }
 
 export * from "./types";

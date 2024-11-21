@@ -60,3 +60,16 @@ const usersTable = createTableFromZod("users", UserSchema, {
 ## License
 
 Apache 2.0
+
+## Requirements
+
+- TypeScript >= 5.0.0
+- Node.js >= 20.x
+- `zod` >= 3.0.0
+- `drizzle-orm` >= 0.29.0
+
+This package is distributed as TypeScript source files and requires TypeScript to be installed in your project.
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
