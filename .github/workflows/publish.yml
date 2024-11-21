@@ -4,23 +4,10 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  # Verify conditions
-  verify:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - run: echo "Verified main branch and version tag"
-
   # Run tests
   test:
-    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
