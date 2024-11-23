@@ -43,6 +43,9 @@ function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
   if (schema._def.typeName === "ZodNullable") {
     return unwrapType((schema as z.ZodNullable<any>).unwrap());
   }
+  if (schema._def.typeName === "ZodPipeline") {
+    return unwrapType(schema._def.out);
+  }
   return schema;
 }
 
