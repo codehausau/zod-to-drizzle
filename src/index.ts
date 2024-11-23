@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { UnsupportedZodTypeError } from "./errors";
-import type { TableOptions } from "./types";
+import type { DrizzleTable, TableOptions } from "./types";
 import { SQLiteHandler } from "./dialects/sqlite";
 import { sqliteTable } from "drizzle-orm/sqlite-core";
 import { mysqlTable } from "drizzle-orm/mysql-core";
@@ -129,12 +129,39 @@ function zodToDrizzle(
   throw new UnsupportedZodTypeError(baseType._def.typeName);
 }
 
+interface Reference {
+  table: DrizzleTable;
+  columns: [keyof z.infer<any>, string][];
+  onDelete?: "cascade" | "restrict" | "set null" | "no action";
+}
+
+function findReference(
+  columnName: string,
+  refs?: TableOptions<any>["references"],
+): Reference[] | undefined {
+  if (!refs) return undefined;
+
+  for (const ref of refs) {
+    const match = ref.columns.find(([local]) => local === columnName);
+    if (match) {
+      return [
+        {
+          table: ref.table,
+          columns: [match],
+          onDelete: ref.onDelete,
+        },
+      ];
+    }
+  }
+  return undefined;
+}
+
 export function createTableFromZod<T extends z.ZodObject<any>>(
   tableName: string,
   schema: T,
   options: TableOptions<T> = {},
 ) {
-  const { dialect = "sqlite", primaryKey, references: refs } = options;
+  const { dialect = "sqlite", primaryKey, references } = options;
   const handler = getDialectHandler(dialect);
 
   const shape = schema.shape;
@@ -142,11 +169,13 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
 
   for (const [key, value] of Object.entries(shape)) {
     const isOptional = isOptionalType(value as z.ZodTypeAny);
+    const ref = findReference(key, references);
+
     columns[key] = zodToDrizzle(
       value as z.ZodTypeAny,
       isOptional,
       handler,
-      refs,
+      ref,
     );
 
     if (primaryKey === key) {
