@@ -231,8 +231,9 @@ describe("zodToDrizzle", () => {
       ],
     });
 
-    console.log(posts);
-
-    expect(posts).toBeDefined();
+    console.log("=======");
+    const fKeys = (posts as any)[Symbol.for("drizzle:SQLiteInlineForeignKeys")];
+    const column = (posts as any)[Symbol.for("drizzle:Columns")].userId;
+    expect(fKeys[0].reference().columns[0].name).toEqual("userId");
   });
 });
