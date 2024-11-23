@@ -68,7 +68,7 @@ export class SQLiteHandler extends DialectHandler {
   }
 
   nativeEnum(isOptional: boolean): ColumnWithMeta {
-    const column = text();
+    const column = integer();
     return isOptional
       ? (column as unknown as ColumnWithMeta)
       : (column.notNull() as unknown as ColumnWithMeta);

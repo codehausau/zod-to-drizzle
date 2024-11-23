@@ -83,7 +83,7 @@ describe("createTableFromZod", () => {
     // Native Enum
     expect(columns.newRole.name).toBe("newRole");
     expect(columns.newRole.notNull).toBe(false);
-    expect(columns.newRole.columnType).toBe("SQLiteText");
+    expect(columns.newRole.columnType).toBe("SQLiteInteger");
 
     // Date
     expect(columns.createdAt.name).toBe("createdAt");
