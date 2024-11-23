@@ -21,7 +21,7 @@ export interface TableOptions<T extends z.ZodTypeAny> {
   references?: Array<{
     table: DrizzleTable;
     columns: [keyof z.infer<T>, string][];
-    onDelete?: "cascade" | "restrict" | "set null" | "no action";
+    onDelete?: "cascade" | "restrict" | "set null" | "no action"; // does nothing for now
   }>;
 }
 
