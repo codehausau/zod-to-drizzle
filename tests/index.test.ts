@@ -27,7 +27,7 @@ describe("createTableFromZod", () => {
       metadata: z.object({ key: z.string() }),
       tags: z.array(z.string()),
       role: z.enum(["admin", "user"]),
-      newRole: z.nativeEnum(Role).optional(),
+      newRole: z.enum(Role).optional(),
     });
 
     const table = createTableFromZod("users", UserSchema, {
@@ -83,7 +83,7 @@ describe("createTableFromZod", () => {
     // Native Enum
     expect(columns.newRole.name).toBe("newRole");
     expect(columns.newRole.notNull).toBe(false);
-    expect(columns.newRole.columnType).toBe("SQLiteInteger");
+    expect(columns.newRole.columnType).toBe("SQLiteText");
 
     // Date
     expect(columns.createdAt.name).toBe("createdAt");
@@ -158,9 +158,11 @@ describe("createTableFromZod", () => {
     const Schema = z.object({
       union: z.union([z.string(), z.number()]),
       literal: z.literal("value"),
-      record: z.record(z.string()),
+      record: z.record(z.string(), z.string()),
       map: z.map(z.string(), z.number()),
       set: z.set(z.string()),
+      nullable: z.string().nullable(),
+      nullish: z.string().nullish(),
     });
 
     const table = createTableFromZod("test", Schema, {
@@ -173,6 +175,8 @@ describe("createTableFromZod", () => {
     expect(columns.record.columnType).toBe("SQLiteText");
     expect(columns.map.columnType).toBe("SQLiteText");
     expect(columns.set.columnType).toBe("SQLiteText");
+    expect(columns.nullable.notNull).toBe(false);
+    expect(columns.nullish.notNull).toBe(false);
   });
 
   test("should handle default values and nullish fields", () => {
