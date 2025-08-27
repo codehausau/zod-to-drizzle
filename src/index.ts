@@ -6,6 +6,7 @@ import { sqliteTable } from "drizzle-orm/sqlite-core";
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import { pgTable } from "drizzle-orm/pg-core";
 import type { DialectHandler } from "./dialects/base";
+import { PostgresHandler } from "./dialects/postgres";
 
 function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
   switch (dialect) {
@@ -14,7 +15,7 @@ function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
     case "mysql":
       throw new Error("MySQL support coming soon");
     case "postgres":
-      throw new Error("PostgreSQL support coming soon");
+       return new PostgresHandler();
     default:
       throw new Error(`Unsupported dialect ${dialect}`);
   }
