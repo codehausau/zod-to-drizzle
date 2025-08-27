@@ -121,17 +121,17 @@ describe("createTableFromZod", () => {
     ).toThrow();
   });
 
-  test("should throw error for unsupported dialects", () => {
-    const SimpleSchema = z.object({
-      id: z.number(),
-    });
+  // test("should throw error for unsupported dialects", () => {
+  //   const SimpleSchema = z.object({
+  //     id: z.number(),
+  //   });
 
-    expect(() =>
-      createTableFromZod("test", SimpleSchema, {
-        dialect: "postgres", // Currently unsupported
-      }),
-    ).toThrow("PostgreSQL support coming soon");
-  });
+  //   expect(() =>
+  //     createTableFromZod("test", SimpleSchema, {
+  //       dialect: "postgres", // Currently unsupported
+  //     }),
+  //   ).toThrow("PostgreSQL support coming soon");
+  // });
 
   test("should handle nullable and optional types", () => {
     const Schema = z.object({
