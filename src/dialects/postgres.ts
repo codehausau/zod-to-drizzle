@@ -112,6 +112,6 @@ export class PostgresHandler extends DialectHandler {
     }
     // Drizzle PG “true” auto-increment is usually serial()/bigserial() or identity.
     // If your pipeline relies on auto-increment, consider swapping to `serial()` here.
-    return integer().primaryKey() as unknown as ColumnWithMeta;
+    return integer().primaryKey().generatedAlwaysAsIdentity() as unknown as ColumnWithMeta;
   }
 }
