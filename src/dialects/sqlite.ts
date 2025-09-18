@@ -2,6 +2,7 @@ import { integer, text } from "drizzle-orm/sqlite-core";
 import { DialectHandler } from "./base";
 import type { ColumnWithMeta, TableOptions } from "../types";
 import { z } from "zod";
+import { doublePrecision } from "drizzle-orm/gel-core";
 
 export class SQLiteHandler extends DialectHandler {
   string(
@@ -20,7 +21,7 @@ export class SQLiteHandler extends DialectHandler {
       : (column.notNull() as unknown as ColumnWithMeta);
   }
 
-  number(
+  int(
     isOptional: boolean,
     hasDefault = false,
     refs?: TableOptions<any>["references"],
@@ -32,6 +33,23 @@ export class SQLiteHandler extends DialectHandler {
           return table?.[column];
         })
       : integer();
+    return isOptional || hasDefault
+      ? (column as unknown as ColumnWithMeta)
+      : (column.notNull() as unknown as ColumnWithMeta);
+  }
+
+  number(
+    isOptional: boolean,
+    hasDefault = false,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    const column = refs
+      ? doublePrecision().references(() => {
+          const table = refs[0]?.table;
+          const column = refs[0]?.columns[0]?.[1] ?? "";
+          return table?.[column];
+        })
+      : doublePrecision();
     return isOptional || hasDefault
       ? (column as unknown as ColumnWithMeta)
       : (column.notNull() as unknown as ColumnWithMeta);

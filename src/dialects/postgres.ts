@@ -1,5 +1,5 @@
 // src/dialects/postgres.ts
-import { integer, text, boolean as pgBoolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { integer, text, boolean as pgBoolean, jsonb, timestamp, doublePrecision } from "drizzle-orm/pg-core";
 import { DialectHandler } from "./base";
 import type { ColumnWithMeta, TableOptions } from "../types";
 import { z } from "zod";
@@ -26,7 +26,31 @@ export class PostgresHandler extends DialectHandler {
   }
 
   /**
-   * INTEGER column (typical PG choice for numbers here), respects FK and default presence.
+   * INTEGER column (typical PG choice for ints here), respects FK and default presence.
+   * If optional OR has a default, we don’t force notNull().
+   */
+  int(
+    isOptional: boolean,
+    hasDefault = false,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    
+    console.log("HELLO againb!!")
+    const column = refs
+      ? integer().references(() => {
+          const table = refs[0]?.table;
+          const columnName = refs[0]?.columns[0]?.[1] ?? "";
+          return table?.[columnName];
+        })
+      : integer();
+
+    return isOptional || hasDefault
+      ? (column as unknown as ColumnWithMeta)
+      : (column.notNull() as unknown as ColumnWithMeta);
+  }
+
+  /**
+   * DOUBLE column (typical PG choice for numbers here), respects FK and default presence.
    * If optional OR has a default, we don’t force notNull().
    */
   number(
@@ -35,13 +59,14 @@ export class PostgresHandler extends DialectHandler {
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta {
     
+     console.log("HELLO againb!2!")
     const column = refs
-      ? integer().references(() => {
+      ? doublePrecision().references(() => {
           const table = refs[0]?.table;
           const columnName = refs[0]?.columns[0]?.[1] ?? "";
           return table?.[columnName];
         })
-      : integer();
+      : doublePrecision();
 
     return isOptional || hasDefault
       ? (column as unknown as ColumnWithMeta)

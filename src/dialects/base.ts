@@ -6,6 +6,11 @@ export abstract class DialectHandler {
     isOptional: boolean,
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta;
+  abstract int(
+    isOptional: boolean,
+    hasDefault: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta;
   abstract number(
     isOptional: boolean,
     hasDefault: boolean,

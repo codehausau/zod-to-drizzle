@@ -61,12 +61,22 @@ function zodToDrizzle(
   const hasReferences = refs !== undefined;
 
   if (baseType.def.type === "number") {
-    return handler.number(
-      isOptional,
-      withDefault,
-      hasReferences ? refs : undefined,
-    );
+    const numType = baseType as z.ZodNumber;
+    if (numType.isInt) {
+      return handler.int(
+        isOptional,
+        withDefault,
+        hasReferences ? refs : undefined,
+      )
+    } else {
+      return handler.number(
+        isOptional,
+        withDefault,
+        hasReferences ? refs : undefined,
+      );
+    }
   }
+
   if (baseType.def.type === "boolean") {
     return handler.boolean(isOptional, withDefault);
   }
@@ -161,6 +171,8 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
   const columns: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(shape)) {
+
+    
     const isOptional = isOptionalType(value as z.ZodTypeAny);
     const ref = findReference(key, references);
 
@@ -170,6 +182,7 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
       handler,
       ref,
     );
+    
 
     if (primaryKey === key) {
       columns[key] = handler.primaryKey(schema);
