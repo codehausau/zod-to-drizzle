@@ -34,8 +34,6 @@ export class PostgresHandler extends DialectHandler {
     hasDefault = false,
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta {
-    
-    console.log("HELLO againb!!")
     const column = refs
       ? integer().references(() => {
           const table = refs[0]?.table;
@@ -58,8 +56,6 @@ export class PostgresHandler extends DialectHandler {
     hasDefault = false,
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta {
-    
-     console.log("HELLO againb!2!")
     const column = refs
       ? doublePrecision().references(() => {
           const table = refs[0]?.table;
