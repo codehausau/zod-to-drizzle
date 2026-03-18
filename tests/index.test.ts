@@ -1,4 +1,6 @@
 import { expect, test, describe } from "bun:test";
+import { sql } from "drizzle-orm";
+import type { PgTableWithColumns } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { createTableFromZod } from "../src";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
@@ -203,6 +205,86 @@ describe("createTableFromZod", () => {
     expect(columns.updatedAt.notNull).toBe(false); // Nullish
     expect(columns.createdBy.notNull).toBe(true);
     expect(columns.deleted.notNull).toBe(false); // Has default
+  });
+
+  test("should apply sqlite column constraints", () => {
+    const Schema = z.object({
+      id: z.number(),
+      email: z.string().optional(),
+      age: z.number(),
+    });
+
+    const table = createTableFromZod("users", Schema, {
+      dialect: "sqlite",
+      primaryKey: "id",
+      constraints: {
+        email: {
+          notNull: true,
+          unique: "users_email_unique",
+        },
+        age: {
+          default: 18,
+          checks: {
+            name: "users_age_non_negative",
+            expression: (column) => sql`${column} >= 0`,
+          },
+        },
+      },
+    }) as SQLiteTable;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.email.notNull).toBe(true);
+    expect(columns.email.isUnique).toBe(true);
+    expect(columns.email.uniqueName).toBe("users_email_unique");
+    expect(columns.age.default).toBe(18);
+
+    const extraConfig = (table as any)[
+      Symbol.for("drizzle:ExtraConfigBuilder")
+    ]((table as any)[Symbol.for("drizzle:ExtraConfigColumns")]);
+    expect(extraConfig).toHaveLength(1);
+    expect(extraConfig[0].name).toBe("users_age_non_negative");
+  });
+
+  test("should apply postgres column constraints", () => {
+    const Schema = z.object({
+      id: z.number(),
+      email: z.string().optional(),
+      age: z.number(),
+    });
+
+    const table = createTableFromZod("users", Schema, {
+      dialect: "postgres",
+      primaryKey: "id",
+      constraints: {
+        email: {
+          notNull: true,
+          unique: {
+            name: "users_email_unique",
+            nulls: "not distinct",
+          },
+        },
+        age: {
+          default: 18,
+          checks: {
+            name: "users_age_non_negative",
+            expression: (column) => sql`${column} >= 0`,
+          },
+        },
+      },
+    }) as PgTableWithColumns<any>;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.email.notNull).toBe(true);
+    expect(columns.email.isUnique).toBe(true);
+    expect(columns.email.uniqueName).toBe("users_email_unique");
+    expect(columns.email.uniqueType).toBe("not distinct");
+    expect(columns.age.default).toBe(18);
+
+    const extraConfig = (table as any)[
+      Symbol.for("drizzle:ExtraConfigBuilder")
+    ]((table as any)[Symbol.for("drizzle:ExtraConfigColumns")]);
+    expect(extraConfig).toHaveLength(1);
+    expect(extraConfig[0].name).toBe("users_age_non_negative");
   });
 });
 

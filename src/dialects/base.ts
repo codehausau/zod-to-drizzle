@@ -1,5 +1,10 @@
 import type { z } from "zod";
-import type { ColumnWithMeta, TableOptions } from "../types";
+import type { SQL } from "drizzle-orm";
+import type {
+  ColumnConstraintOptions,
+  ColumnWithMeta,
+  TableOptions,
+} from "../types";
 
 export abstract class DialectHandler {
   abstract string(
@@ -41,4 +46,9 @@ export abstract class DialectHandler {
     zodType: z.ZodType,
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta;
+  abstract applyColumnConstraints(
+    column: ColumnWithMeta,
+    constraints?: ColumnConstraintOptions,
+  ): ColumnWithMeta;
+  abstract check(name: string, value: SQL): unknown;
 }

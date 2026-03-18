@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { UnsupportedZodTypeError } from "./errors";
-import type { DrizzleTable, TableOptions } from "./types";
+import type {
+  ColumnCheckConstraint,
+  ColumnConstraintOptions,
+  DrizzleColumn,
+  DrizzleTable,
+  TableOptions,
+} from "./types";
 import { SQLiteHandler } from "./dialects/sqlite";
 import { sqliteTable } from "drizzle-orm/sqlite-core";
 import { mysqlTable } from "drizzle-orm/mysql-core";
@@ -15,7 +21,7 @@ function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
     case "mysql":
       throw new Error("MySQL support coming soon");
     case "postgres":
-       return new PostgresHandler();
+      return new PostgresHandler();
     default:
       throw new Error(`Unsupported dialect ${dialect}`);
   }
@@ -67,7 +73,7 @@ function zodToDrizzle(
         isOptional,
         withDefault,
         hasReferences ? refs : undefined,
-      )
+      );
     } else {
       return handler.number(
         isOptional,
@@ -159,21 +165,56 @@ function findReference(
   return undefined;
 }
 
+function normalizeChecks(
+  checks?: ColumnCheckConstraint | ColumnCheckConstraint[],
+): ColumnCheckConstraint[] {
+  if (!checks) {
+    return [];
+  }
+
+  return Array.isArray(checks) ? checks : [checks];
+}
+
 export function createTableFromZod<T extends z.ZodObject<any>>(
   tableName: string,
   schema: T,
   options: TableOptions<T> = {},
 ) {
   const { dialect = "sqlite", primaryKey, references } = options;
+  const constraints = (options.constraints ?? {}) as Record<
+    string,
+    ColumnConstraintOptions | undefined
+  >;
   const handler = getDialectHandler(dialect);
 
   const shape = schema.shape;
   const columns: Record<string, any> = {};
+  const checks: Array<{
+    columnName: string;
+    constraint: ColumnCheckConstraint;
+  }> = [];
+  const buildChecks = (table: Record<string, DrizzleColumn>) =>
+    checks.map(({ columnName, constraint }) => {
+      const column = table[columnName];
+
+      if (!column) {
+        throw new Error(`Missing column ${columnName} while building checks`);
+      }
+
+      return handler.check(
+        constraint.name,
+        constraint.expression(column, table),
+      );
+    });
 
   for (const [key, value] of Object.entries(shape)) {
-
-    
-    const isOptional = isOptionalType(value as z.ZodTypeAny);
+    const columnConstraints = constraints[key];
+    const isOptional =
+      columnConstraints?.notNull === true
+        ? false
+        : columnConstraints?.notNull === false
+          ? true
+          : isOptionalType(value as z.ZodTypeAny);
     const ref = findReference(key, references);
 
     columns[key] = zodToDrizzle(
@@ -182,20 +223,41 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
       handler,
       ref,
     );
-    
 
     if (primaryKey === key) {
       columns[key] = handler.primaryKey(schema);
+    }
+
+    columns[key] = handler.applyColumnConstraints(
+      columns[key],
+      columnConstraints,
+    );
+
+    for (const constraint of normalizeChecks(columnConstraints?.checks)) {
+      checks.push({
+        columnName: key,
+        constraint,
+      });
     }
   }
 
   switch (dialect) {
     case "sqlite":
-      return sqliteTable(tableName, columns);
+      return sqliteTable(
+        tableName,
+        columns as any,
+        ((table: any) =>
+          buildChecks(table as Record<string, DrizzleColumn>)) as any,
+      );
     case "mysql":
       return mysqlTable(tableName, columns);
     case "postgres":
-      return pgTable(tableName, columns);
+      return pgTable(
+        tableName,
+        columns as any,
+        ((table: any) =>
+          buildChecks(table as Record<string, DrizzleColumn>)) as any,
+      );
     default:
       return sqliteTable(tableName, columns);
   }
