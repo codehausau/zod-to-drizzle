@@ -1,8 +1,13 @@
-import { integer, text } from "drizzle-orm/sqlite-core";
+import { check, integer, text } from "drizzle-orm/sqlite-core";
 import { DialectHandler } from "./base";
-import type { ColumnWithMeta, TableOptions } from "../types";
+import type {
+  ColumnConstraintOptions,
+  ColumnWithMeta,
+  TableOptions,
+} from "../types";
 import { z } from "zod";
 import { doublePrecision } from "drizzle-orm/gel-core";
+import type { SQL } from "drizzle-orm";
 
 export class SQLiteHandler extends DialectHandler {
   string(
@@ -99,5 +104,41 @@ export class SQLiteHandler extends DialectHandler {
     return integer().primaryKey({
       autoIncrement: true,
     }) as unknown as ColumnWithMeta;
+  }
+
+  applyColumnConstraints(
+    column: ColumnWithMeta,
+    constraints?: ColumnConstraintOptions,
+  ): ColumnWithMeta {
+    if (!constraints) {
+      return column;
+    }
+
+    let constrainedColumn = column as any;
+
+    if (constraints.notNull === true) {
+      constrainedColumn = constrainedColumn.notNull();
+    }
+
+    if (constraints.default !== undefined) {
+      constrainedColumn = constrainedColumn.default(constraints.default);
+    }
+
+    if (constraints.unique) {
+      const name =
+        typeof constraints.unique === "string"
+          ? constraints.unique
+          : typeof constraints.unique === "object"
+            ? constraints.unique.name
+            : undefined;
+
+      constrainedColumn = constrainedColumn.unique(name);
+    }
+
+    return constrainedColumn as ColumnWithMeta;
+  }
+
+  check(name: string, value: SQL) {
+    return check(name, value);
   }
 }

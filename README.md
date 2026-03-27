@@ -78,6 +78,46 @@ const posts = createTableFromZod("posts", PostSchema, {
 });
 ```
 
+## Column Constraints
+
+```typescript
+import { sql } from "drizzle-orm";
+
+const UserSchema = z.object({
+  id: z.number(),
+  email: z.string().optional(),
+  age: z.number(),
+});
+
+const users = createTableFromZod("users", UserSchema, {
+  dialect: "postgres",
+  primaryKey: "id",
+  constraints: {
+    email: {
+      notNull: true,
+      unique: {
+        name: "users_email_unique",
+        nulls: "not distinct",
+      },
+    },
+    age: {
+      default: 18,
+      checks: {
+        name: "users_age_non_negative",
+        expression: (column) => sql`${column} >= 0`,
+      },
+    },
+  },
+});
+```
+
+Supported constraint options:
+
+- `notNull`
+- `default`
+- `unique`
+- `checks`
+
 ## Supported Types
 
 | Zod Type            | SQLite | PostgreSQL | MySQL |
@@ -104,6 +144,28 @@ function createTableFromZod<T extends z.ZodObject<any>>(
   options: {
     dialect?: "sqlite" | "postgres" | "mysql";
     primaryKey?: keyof z.infer<T>;
+    constraints?: Partial<{
+      [K in keyof z.infer<T>]: {
+        notNull?: boolean;
+        default?: z.infer<T>[K];
+        unique?:
+          | boolean
+          | string
+          | {
+              name?: string;
+              nulls?: "distinct" | "not distinct";
+            };
+        checks?:
+          | {
+              name: string;
+              expression: (column, columns) => SQL;
+            }
+          | Array<{
+              name: string;
+              expression: (column, columns) => SQL;
+            }>;
+      };
+    }>;
     references?: Array<{
       table: SQLiteTable;
       columns: [keyof z.infer<T>, string][];
@@ -119,6 +181,7 @@ function createTableFromZod<T extends z.ZodObject<any>>(
 - `options`:
   - `dialect`: Database dialect (default: "sqlite")
   - `primaryKey`: Column to use as primary key
+  - `constraints`: Column-level database constraints
   - `references`: Array of foreign key references
 
 ## Examples

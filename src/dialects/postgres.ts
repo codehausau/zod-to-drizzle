@@ -1,8 +1,21 @@
 // src/dialects/postgres.ts
-import { integer, text, boolean as pgBoolean, jsonb, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import {
+  check,
+  integer,
+  text,
+  boolean as pgBoolean,
+  jsonb,
+  timestamp,
+  doublePrecision,
+} from "drizzle-orm/pg-core";
 import { DialectHandler } from "./base";
-import type { ColumnWithMeta, TableOptions } from "../types";
+import type {
+  ColumnConstraintOptions,
+  ColumnWithMeta,
+  TableOptions,
+} from "../types";
 import { z } from "zod";
+import type { SQL } from "drizzle-orm";
 
 export class PostgresHandler extends DialectHandler {
   /**
@@ -133,6 +146,49 @@ export class PostgresHandler extends DialectHandler {
     }
     // Drizzle PG “true” auto-increment is usually serial()/bigserial() or identity.
     // If your pipeline relies on auto-increment, consider swapping to `serial()` here.
-    return integer().primaryKey().generatedAlwaysAsIdentity() as unknown as ColumnWithMeta;
+    return integer()
+      .primaryKey()
+      .generatedAlwaysAsIdentity() as unknown as ColumnWithMeta;
+  }
+
+  applyColumnConstraints(
+    column: ColumnWithMeta,
+    constraints?: ColumnConstraintOptions,
+  ): ColumnWithMeta {
+    if (!constraints) {
+      return column;
+    }
+
+    let constrainedColumn = column as any;
+
+    if (constraints.notNull === true) {
+      constrainedColumn = constrainedColumn.notNull();
+    }
+
+    if (constraints.default !== undefined) {
+      constrainedColumn = constrainedColumn.default(constraints.default);
+    }
+
+    if (constraints.unique) {
+      const name =
+        typeof constraints.unique === "string"
+          ? constraints.unique
+          : typeof constraints.unique === "object"
+            ? constraints.unique.name
+            : undefined;
+      const config =
+        typeof constraints.unique === "object" &&
+        constraints.unique.nulls !== undefined
+          ? { nulls: constraints.unique.nulls }
+          : undefined;
+
+      constrainedColumn = constrainedColumn.unique(name, config);
+    }
+
+    return constrainedColumn as ColumnWithMeta;
+  }
+
+  check(name: string, value: SQL) {
+    return check(name, value);
   }
 }
