@@ -3,6 +3,7 @@ import {
   check,
   integer,
   text,
+  uuid,
   boolean as pgBoolean,
   jsonb,
   timestamp,
@@ -16,6 +17,7 @@ import type {
 } from "../types";
 import { z } from "zod";
 import type { SQL } from "drizzle-orm";
+import { isUuidStringSchema } from "../zod-string-formats";
 
 export class PostgresHandler extends DialectHandler {
   /**
@@ -33,6 +35,33 @@ export class PostgresHandler extends DialectHandler {
         })
       : text();
 
+    return isOptional
+      ? (column as unknown as ColumnWithMeta)
+      : (column.notNull() as unknown as ColumnWithMeta);
+  }
+
+  uuidString(
+    isOptional: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    const column = refs
+      ? uuid().references(() => {
+          const table = refs[0]?.table;
+          const columnName = refs[0]?.columns[0]?.[1] ?? "";
+          return table?.[columnName];
+        })
+      : uuid();
+
+    return isOptional
+      ? (column as unknown as ColumnWithMeta)
+      : (column.notNull() as unknown as ColumnWithMeta);
+  }
+
+  datetimeString(
+    isOptional: boolean,
+    withTimezone: boolean,
+  ): ColumnWithMeta {
+    const column = timestamp({ withTimezone });
     return isOptional
       ? (column as unknown as ColumnWithMeta)
       : (column.notNull() as unknown as ColumnWithMeta);
@@ -108,10 +137,7 @@ export class PostgresHandler extends DialectHandler {
    * TIMESTAMP column (without timezone). If you prefer timestamptz, swap to: timestamp({ withTimezone: true }).
    */
   date(isOptional: boolean): ColumnWithMeta {
-    const column = timestamp({ withTimezone: false });
-    return isOptional
-      ? (column as unknown as ColumnWithMeta)
-      : (column.notNull() as unknown as ColumnWithMeta);
+    return this.datetimeString(isOptional, false);
   }
 
   /**
@@ -141,6 +167,10 @@ export class PostgresHandler extends DialectHandler {
    * - otherwise  -> INTEGER primary key (note: PG autoincrement is SERIAL/IDENTITY; see note below)
    */
   primaryKey(zodType: z.ZodType): ColumnWithMeta {
+    if (isUuidStringSchema(zodType)) {
+      return uuid().primaryKey() as unknown as ColumnWithMeta;
+    }
+
     if (zodType instanceof z.ZodString) {
       return text().primaryKey() as unknown as ColumnWithMeta;
     }

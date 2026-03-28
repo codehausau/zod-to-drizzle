@@ -11,6 +11,15 @@ export abstract class DialectHandler {
     isOptional: boolean,
     refs?: TableOptions<any>["references"],
   ): ColumnWithMeta;
+  abstract uuidString(
+    isOptional: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta;
+  abstract datetimeString(
+    isOptional: boolean,
+    withTimezone: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta;
   abstract int(
     isOptional: boolean,
     hasDefault: boolean,

@@ -13,6 +13,11 @@ import { mysqlTable } from "drizzle-orm/mysql-core";
 import { pgTable } from "drizzle-orm/pg-core";
 import type { DialectHandler } from "./dialects/base";
 import { PostgresHandler } from "./dialects/postgres";
+import {
+  isDateTimeStringSchema,
+  isOffsetDateTimeStringSchema,
+  isUuidStringSchema,
+} from "./zod-string-formats";
 
 function getDialectHandler(dialect: TableOptions<any>["dialect"]) {
   switch (dialect) {
@@ -87,6 +92,18 @@ function zodToDrizzle(
     return handler.boolean(isOptional, withDefault);
   }
   if (baseType.def.type === "string") {
+    if (isUuidStringSchema(baseType)) {
+      return handler.uuidString(isOptional, refs);
+    }
+
+    if (isDateTimeStringSchema(baseType)) {
+      return handler.datetimeString(
+        isOptional,
+        isOffsetDateTimeStringSchema(baseType),
+        refs,
+      );
+    }
+
     return handler.string(isOptional, refs);
   }
   if (baseType.def.type === "object") {
@@ -225,7 +242,7 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
     );
 
     if (primaryKey === key) {
-      columns[key] = handler.primaryKey(schema);
+      columns[key] = handler.primaryKey(unwrapType(value as z.ZodTypeAny));
     }
 
     columns[key] = handler.applyColumnConstraints(

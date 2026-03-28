@@ -26,6 +26,21 @@ export class SQLiteHandler extends DialectHandler {
       : (column.notNull() as unknown as ColumnWithMeta);
   }
 
+  uuidString(
+    isOptional: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    return this.string(isOptional, refs);
+  }
+
+  datetimeString(
+    isOptional: boolean,
+    _withTimezone: boolean,
+    refs?: TableOptions<any>["references"],
+  ): ColumnWithMeta {
+    return this.string(isOptional, refs);
+  }
+
   int(
     isOptional: boolean,
     hasDefault = false,
