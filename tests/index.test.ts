@@ -286,6 +286,58 @@ describe("createTableFromZod", () => {
     expect(extraConfig).toHaveLength(1);
     expect(extraConfig[0].name).toBe("users_age_non_negative");
   });
+
+  test("should map postgres string formats to dialect-aware column types", () => {
+    const Schema = z.object({
+      plain: z.string(),
+      uuidValue: z.string().uuid(),
+      timestampWithoutTimezone: z.string().datetime(),
+      timestampWithTimezone: z.string().datetime({ offset: true }),
+    });
+
+    const table = createTableFromZod("events", Schema, {
+      dialect: "postgres",
+    }) as PgTableWithColumns<any>;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.plain.columnType).toBe("PgText");
+    expect(columns.uuidValue.columnType).toBe("PgUUID");
+    expect(columns.timestampWithoutTimezone.columnType).toBe("PgTimestamp");
+    expect(columns.timestampWithoutTimezone.withTimezone).toBe(false);
+    expect(columns.timestampWithTimezone.columnType).toBe("PgTimestamp");
+    expect(columns.timestampWithTimezone.withTimezone).toBe(true);
+  });
+
+  test("should use postgres uuid columns for uuid string primary keys", () => {
+    const Schema = z.object({
+      id: z.string().uuid(),
+      email: z.string(),
+    });
+
+    const table = createTableFromZod("users", Schema, {
+      dialect: "postgres",
+      primaryKey: "id",
+    }) as PgTableWithColumns<any>;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.id.primary).toBe(true);
+    expect(columns.id.notNull).toBe(true);
+    expect(columns.id.columnType).toBe("PgUUID");
+    expect(columns.email.columnType).toBe("PgText");
+  });
+
+  test("should keep datetime strings as text outside postgres", () => {
+    const Schema = z.object({
+      createdAt: z.string().datetime({ offset: true }),
+    });
+
+    const table = createTableFromZod("events", Schema, {
+      dialect: "sqlite",
+    }) as SQLiteTable;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.createdAt.columnType).toBe("SQLiteText");
+  });
 });
 
 describe("zodToDrizzle", () => {
