@@ -326,6 +326,31 @@ describe("createTableFromZod", () => {
     expect(columns.email.columnType).toBe("PgText");
   });
 
+  test("should pass postgres primary key identity options", () => {
+    const Schema = z.object({
+      id: z.number(),
+      email: z.string(),
+    });
+
+    const table = createTableFromZod("users", Schema, {
+      dialect: "postgres",
+      primaryKey: "id",
+      primaryKeyIdentity: {
+        type: "byDefault",
+        startWith: 1000,
+      },
+    }) as PgTableWithColumns<any>;
+
+    const columns = (table as any)[Symbol.for("drizzle:Columns")];
+    expect(columns.id.generatedIdentity).toEqual({
+      type: "byDefault",
+      sequenceName: undefined,
+      sequenceOptions: {
+        startWith: 1000,
+      },
+    });
+  });
+
   test("should keep datetime strings as text outside postgres", () => {
     const Schema = z.object({
       createdAt: z.string().datetime({ offset: true }),

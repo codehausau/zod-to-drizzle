@@ -35,12 +35,24 @@ export interface ColumnConstraintOptions<TValue = unknown> {
   checks?: ColumnCheckConstraint | ColumnCheckConstraint[];
 }
 
+export interface PrimaryKeyIdentityOptions {
+  type?: "always" | "byDefault";
+  name?: string;
+  increment?: number | string;
+  minValue?: number | string;
+  maxValue?: number | string;
+  startWith?: number | string;
+  cache?: number | string;
+  cycle?: boolean;
+}
+
 export type ColumnConstraints<T extends z.ZodTypeAny> = Partial<{
   [K in keyof z.infer<T>]: ColumnConstraintOptions<z.infer<T>[K]>;
 }>;
 
 export interface TableOptions<T extends z.ZodTypeAny> {
   primaryKey?: keyof z.infer<T>;
+  primaryKeyIdentity?: PrimaryKeyIdentityOptions;
   dialect?: SupportedDialects;
   constraints?: ColumnConstraints<T>;
   references?: Array<{

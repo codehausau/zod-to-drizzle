@@ -13,6 +13,7 @@ import { DialectHandler } from "./base";
 import type {
   ColumnConstraintOptions,
   ColumnWithMeta,
+  PrimaryKeyIdentityOptions,
   TableOptions,
 } from "../types";
 import { z } from "zod";
@@ -57,10 +58,7 @@ export class PostgresHandler extends DialectHandler {
       : (column.notNull() as unknown as ColumnWithMeta);
   }
 
-  datetimeString(
-    isOptional: boolean,
-    withTimezone: boolean,
-  ): ColumnWithMeta {
+  datetimeString(isOptional: boolean, withTimezone: boolean): ColumnWithMeta {
     const column = timestamp({ withTimezone });
     return isOptional
       ? (column as unknown as ColumnWithMeta)
@@ -166,7 +164,10 @@ export class PostgresHandler extends DialectHandler {
    * - z.string() -> TEXT primary key
    * - otherwise  -> INTEGER primary key (note: PG autoincrement is SERIAL/IDENTITY; see note below)
    */
-  primaryKey(zodType: z.ZodType): ColumnWithMeta {
+  primaryKey(
+    zodType: z.ZodType,
+    identity?: PrimaryKeyIdentityOptions,
+  ): ColumnWithMeta {
     if (isUuidStringSchema(zodType)) {
       return uuid().primaryKey() as unknown as ColumnWithMeta;
     }
@@ -174,11 +175,17 @@ export class PostgresHandler extends DialectHandler {
     if (zodType instanceof z.ZodString) {
       return text().primaryKey() as unknown as ColumnWithMeta;
     }
-    // Drizzle PG “true” auto-increment is usually serial()/bigserial() or identity.
-    // If your pipeline relies on auto-increment, consider swapping to `serial()` here.
-    return integer()
-      .primaryKey()
-      .generatedAlwaysAsIdentity() as unknown as ColumnWithMeta;
+    const { type = "always", ...sequenceOptions } = identity ?? {};
+    const sequence = Object.keys(sequenceOptions).length
+      ? sequenceOptions
+      : undefined;
+    const column = integer().primaryKey();
+
+    return (type === "byDefault"
+      ? column.generatedByDefaultAsIdentity(sequence)
+      : column.generatedAlwaysAsIdentity(
+          sequence,
+        )) as unknown as ColumnWithMeta;
   }
 
   applyColumnConstraints(

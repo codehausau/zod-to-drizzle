@@ -197,7 +197,12 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
   schema: T,
   options: TableOptions<T> = {},
 ) {
-  const { dialect = "sqlite", primaryKey, references } = options;
+  const {
+    dialect = "sqlite",
+    primaryKey,
+    primaryKeyIdentity,
+    references,
+  } = options;
   const constraints = (options.constraints ?? {}) as Record<
     string,
     ColumnConstraintOptions | undefined
@@ -242,7 +247,10 @@ export function createTableFromZod<T extends z.ZodObject<any>>(
     );
 
     if (primaryKey === key) {
-      columns[key] = handler.primaryKey(unwrapType(value as z.ZodTypeAny));
+      columns[key] = handler.primaryKey(
+        unwrapType(value as z.ZodTypeAny),
+        primaryKeyIdentity,
+      );
     }
 
     columns[key] = handler.applyColumnConstraints(

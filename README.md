@@ -144,6 +144,16 @@ function createTableFromZod<T extends z.ZodObject<any>>(
   options: {
     dialect?: "sqlite" | "postgres" | "mysql";
     primaryKey?: keyof z.infer<T>;
+    primaryKeyIdentity?: {
+      type?: "always" | "byDefault";
+      name?: string;
+      startWith?: number | string;
+      increment?: number | string;
+      minValue?: number | string;
+      maxValue?: number | string;
+      cache?: number | string;
+      cycle?: boolean;
+    };
     constraints?: Partial<{
       [K in keyof z.infer<T>]: {
         notNull?: boolean;
@@ -181,8 +191,24 @@ function createTableFromZod<T extends z.ZodObject<any>>(
 - `options`:
   - `dialect`: Database dialect (default: "sqlite")
   - `primaryKey`: Column to use as primary key
+  - `primaryKeyIdentity`: PostgreSQL identity options for numeric primary keys
   - `constraints`: Column-level database constraints
   - `references`: Array of foreign key references
+
+### PostgreSQL Identity Start Value
+
+```typescript
+const users = createTableFromZod("users", UserSchema, {
+  dialect: "postgres",
+  primaryKey: "id",
+  primaryKeyIdentity: {
+    startWith: 1000,
+  },
+});
+```
+
+By default numeric PostgreSQL primary keys use `generatedAlwaysAsIdentity()`.
+Set `type: "byDefault"` to allow explicit IDs with `generatedByDefaultAsIdentity()`.
 
 ## Examples
 

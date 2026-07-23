@@ -3,6 +3,7 @@ import type { SQL } from "drizzle-orm";
 import type {
   ColumnConstraintOptions,
   ColumnWithMeta,
+  PrimaryKeyIdentityOptions,
   TableOptions,
 } from "../types";
 
@@ -53,7 +54,7 @@ export abstract class DialectHandler {
   ): ColumnWithMeta;
   abstract primaryKey(
     zodType: z.ZodType,
-    refs?: TableOptions<any>["references"],
+    identity?: PrimaryKeyIdentityOptions,
   ): ColumnWithMeta;
   abstract applyColumnConstraints(
     column: ColumnWithMeta,
